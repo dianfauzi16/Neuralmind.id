@@ -23,10 +23,8 @@ RUN pip install --upgrade pip && \
 # Copy application code
 COPY . .
 
-# Expose fallback port (Railway akan menimpa ini secara dinamis)
-EXPOSE 8000
+# Hugging Face Spaces wajib menggunakan port 7860
+EXPOSE 7860
 
-# Start FastAPI app
-# Menggunakan sh -c agar environment variable $PORT dari Railway bisa terbaca.
-# Jika $PORT tidak ada, ia akan otomatis memakai port 8000.
-CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+# Start FastAPI app pada port 7860 (default HF Spaces)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
