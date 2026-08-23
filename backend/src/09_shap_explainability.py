@@ -28,7 +28,7 @@ test_df = pd.read_csv(root_path / "Data/split/test_data.csv")
 target_cols = ['risk_depression', 'risk_anxiety', 'risk_stress']
 target_labels = ['Depression', 'Anxiety', 'Stress']
 
-# Gunakan 15 fitur spesifik dari proses seleksi fitur B-MFO
+# Gunakan 15 fitur terpilih (10 TIPI personality + 5 demografis)
 selected_features = [
     'TIPI1', 'TIPI2', 'TIPI3', 'TIPI4', 'TIPI5', 'TIPI6', 'TIPI7', 'TIPI8', 
     'TIPI9', 'TIPI10', 'education', 'urban', 'gender', 'age', 'familysize'
