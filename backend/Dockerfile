@@ -23,8 +23,9 @@ RUN pip install --upgrade pip && \
 # Copy application code
 COPY . .
 
-# Hugging Face Spaces wajib menggunakan port 7860
-EXPOSE 7860
+# Expose port (Render akan menggunakan $PORT secara dinamis)
+EXPOSE 8000
 
-# Start FastAPI app pada port 7860 (default HF Spaces)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
+# Start FastAPI app
+# $PORT akan disediakan oleh Render, fallback ke 8000 untuk lokal
+CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
