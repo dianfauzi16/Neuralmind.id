@@ -228,13 +228,13 @@ export default function Home() {
             <div className="bg-stone-50 border border-stone-200/80 rounded-2xl p-6">
               <h3 className="font-semibold text-stone-800 mb-3">Seleksi Fitur</h3>
               <p className="text-stone-500 text-sm leading-relaxed mb-4">
-                Moth-Flame Optimization (MFO) secara otomatis memilih fitur yang paling relevan 
-                dari data kepribadian dan demografis untuk meningkatkan akurasi prediksi.
+                Fitur yang digunakan dipilih berdasarkan relevansi psikologis, meliputi 
+                10 dimensi kepribadian (TIPI) dan 5 faktor demografis untuk menghasilkan prediksi yang akurat.
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-white border border-stone-200 rounded-md text-xs font-medium text-stone-600">MFO</span>
-                <span className="px-3 py-1 bg-white border border-stone-200 rounded-md text-xs font-medium text-stone-600">Feature Selection</span>
-                <span className="px-3 py-1 bg-white border border-stone-200 rounded-md text-xs font-medium text-stone-600">Otomatis</span>
+                <span className="px-3 py-1 bg-white border border-stone-200 rounded-md text-xs font-medium text-stone-600">TIPI-10</span>
+                <span className="px-3 py-1 bg-white border border-stone-200 rounded-md text-xs font-medium text-stone-600">15 Fitur</span>
+                <span className="px-3 py-1 bg-white border border-stone-200 rounded-md text-xs font-medium text-stone-600">Demografis</span>
               </div>
             </div>
 
@@ -375,7 +375,7 @@ export default function Home() {
           
           <div className="pt-8 border-t border-stone-100 text-xs text-stone-400 font-medium flex flex-col md:flex-row justify-between items-center gap-3">
             <div>&copy; {new Date().getFullYear()} NeuralMind.id — Proyek penelitian berbasis data mining.</div>
-            <div className="text-stone-300">Dibangun dengan Next.js, XGBoost, dan MFO.</div>
+            <div className="text-stone-300">Dibangun dengan Next.js, XGBoost, dan SHAP.</div>
           </div>
         </div>
       </footer>
