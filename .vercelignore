@@ -1,0 +1,9 @@
+# Mengabaikan backend agar Vercel hanya memproses frontend Next.js
+backend/
+Data/
+models/
+notebooks/
+mlruns/
+outputs/
+*.pkl
+*.csv
