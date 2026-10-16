@@ -41,16 +41,14 @@ with mlflow.start_run(run_name="Data_Cleaning_and_Engineering"):
     df = df.drop(columns=tech_cols, errors='ignore')
     
     # Menghapus kolom VCL1-16 (Vocabulary Checklist)
-    # Kolom ini hanya digunakan untuk validasi atensi responden, bukan fitur psikososial
+    # VCL merupakan daftar kosakata dan tidak digunakan sebagai prediktor penelitian ini.
     vcl_cols = [f"VCL{i}" for i in range(1, 17)]
     df = df.drop(columns=vcl_cols, errors="ignore")
     
-    # Menghapus fitur demografis yang tidak relevan untuk konteks penelitian di Indonesia
-    # - engnat: English as native language, tidak relevan untuk responden Indonesia
-    # - orientation: orientasi seksual, di luar cakupan penelitian psikososial remaja
-    # - married : Penelitian ini di khususkan bagi usia Remaja
-    # - race : Kategori ras global tidak merepresentasikan Indonesia
-    # - voted : Tidak ada landasan klinis untuk kesehatan mental remaja
+    # Menghapus atribut di luar pilihan 15 prediktor penelitian.
+    # Data berasal dari responden lintas negara; tidak difilter khusus Indonesia.
+    # Prediktor demografi yang dipertahankan: education, urban, gender, age, familysize.
+    # voted juga tidak termasuk prediktor yang dipilih dalam eksperimen ini.
     demo_drop_cols = ["engnat", "orientation", "married", "race", "voted", "religion", "country"]
     df = df.drop(columns=demo_drop_cols, errors="ignore")
     print("   ✔ Kolom VCL1-16, engnat, orientation, dan married berhasil di-drop.")
@@ -61,7 +59,8 @@ with mlflow.start_run(run_name="Data_Cleaning_and_Engineering"):
     print("⏳ 3. Penanganan Missing Values...")
     # Menghapus kolom 'major' karena memiliki >25% data kosong (berdasarkan EDA)
     df = df.drop(columns=['major'], errors='ignore')
-    # Menghapus baris yang masih memiliki missing value di kolom lain
+    # Menghapus baris yang masih memiliki nilai kosong (NaN).
+    # Nilai 0 pada TIPI tidak dikonversi menjadi NaN dalam eksperimen tersimpan.
     df = df.dropna()
 
     # ==========================================
@@ -110,14 +109,14 @@ with mlflow.start_run(run_name="Data_Cleaning_and_Engineering"):
     summary = f"""
     ### 🛠️ Tahap 03: Data Preprocessing Selesai
     ---
-    Data telah dibersihkan dan ditransformasi sesuai standar medis DASS-42.
+    Data telah diproses dan target biner dibentuk dari skor DASS-42 sesuai aturan eksperimen.
 
     **Detail Perubahan:**
     * **Data Cleaning:** Menghapus variabel teknis, VCL1-16, engnat, orientation, married & memfilter usia (10-18 thn).
     * **Outlier:** Berhasil ditangani melalui pemfilteran usia.
     * **Missing Value:** Menghapus kolom 'major' dan baris kosong.
     * **Feature Engineering:** Menghasilkan 3 label target (*risk_depression, risk_anxiety, risk_stress*).
-    * **Drop Fitur:** VCL1-16 (validasi),engnat, orientation (tidak relevan untuk konteks Indonesia).
+    * **Pemilihan Prediktor:** 10 item TIPI dan 5 atribut demografi; item DASS, skor DASS, VCL, dan atribut lain dikeluarkan.
 
     **Status Data:**
     * Jumlah awal: {initial_count:,} baris.

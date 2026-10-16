@@ -10,6 +10,7 @@ import yaml
 from pathlib import Path
 import warnings
 import shap
+from src.chain_probabilities import predict_chain_probabilities
 warnings.filterwarnings('ignore')
 
 app = FastAPI(title="Sistem Penilaian Risiko Kesehatan Mental API")
@@ -49,20 +50,9 @@ config = {
 
 # 3. Helper functions for Prediction
 def chain_predict_proba(model, X):
-    X_arr = X.values if hasattr(X, 'values') else X.copy()
-    n_samples = X_arr.shape[0]
-    n_targets = len(model.estimators_)
-    all_probas = np.zeros((n_samples, n_targets))
-    
-    X_aug = X_arr.copy()
-    for i, estimator in enumerate(model.estimators_):
-        proba = estimator.predict_proba(X_aug)[:, 1]
-        all_probas[:, i] = proba
-        pred_label = (proba >= 0.5).astype(int).reshape(-1, 1)
-        X_aug = np.hstack([X_aug, pred_label])
-    
+    all_probas = predict_chain_probabilities(model, X)
     return [np.column_stack([1 - all_probas[:, i], all_probas[:, i]])
-            for i in range(n_targets)]
+            for i in range(all_probas.shape[1])]
 
 def get_shap_explanations(model, input_df, target_cols):
     X_sample_aug = input_df.values.copy()
@@ -90,16 +80,17 @@ def get_shap_explanations(model, input_df, target_cols):
 
     "pred_depression": "Risiko Depresi",
     "pred_anxiety": "Risiko Kecemasan",
+    "pred_stress": "Risiko Stres",
 }
     
-    for i, target in enumerate(target_cols):
+    for i, original_label_index in enumerate(model.order_):
+        target = target_cols[original_label_index]
         estimator = model.estimators_[i]
         
-        current_feature_names = base_features.copy()
-        if i == 1:
-            current_feature_names += ['pred_depression']
-        elif i == 2:
-            current_feature_names += ['pred_depression', 'pred_anxiety']
+        previous_targets = [target_cols[index] for index in model.order_[:i]]
+        current_feature_names = base_features + [
+            'pred_' + previous.replace('risk_', '') for previous in previous_targets
+        ]
             
         X_shap_df = pd.DataFrame(X_sample_aug, columns=current_feature_names)
         
@@ -129,8 +120,7 @@ def get_shap_explanations(model, input_df, target_cols):
         key_name = target.replace("risk_", "")
         explanations[key_name] = shap_explanation
         
-        pred_proba = estimator.predict_proba(X_sample_aug)[:, 1]
-        pred_label = (pred_proba >= 0.5).astype(int).reshape(-1, 1)
+        pred_label = np.asarray(estimator.predict(X_sample_aug)).reshape(-1, 1)
         X_sample_aug = np.hstack([X_sample_aug, pred_label])
         
     return explanations

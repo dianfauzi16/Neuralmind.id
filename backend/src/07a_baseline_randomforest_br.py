@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 import time
 from pathlib import Path
-from sklearn.metrics import f1_score, classification_report, hamming_loss, accuracy_score, roc_auc_score, make_scorer
-from sklearn.model_selection import cross_validate
+from sklearn.metrics import f1_score, classification_report, hamming_loss, accuracy_score, roc_auc_score
+from fold_sampling import cross_validate_with_fold_sampling
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
@@ -36,13 +36,16 @@ with mlflow.start_run(run_name="RF_Optuna_DefaultThreshold"):
     print("⏳ 1. Memuat Data...")
     target_cols = ['risk_depression', 'risk_anxiety', 'risk_stress']
     
-    # Memuat data train yang sudah di-SMOTE dan data test asli
+    # CV memakai train asli; train yang sudah di-oversample hanya untuk model final.
+    train_original = pd.read_csv(root_path / "Data/split/train_data.csv")
     train_smote = pd.read_csv(root_path / "Data/processed/train_smote.csv")
     feature_names = [col for col in train_smote.columns if col not in target_cols]
     num_features = len(feature_names)
     
     X_train = train_smote[feature_names].values
     Y_train = train_smote[target_cols].astype(int).values
+    X_cv = train_original[feature_names]
+    Y_cv = train_original[target_cols].astype(int)
     
     test_df = pd.read_csv(root_path / "Data/split/test_data.csv")
     X_test = test_df[feature_names].values
@@ -59,7 +62,6 @@ with mlflow.start_run(run_name="RF_Optuna_DefaultThreshold"):
     tune_start = time.time()
     
     mlkf = MultilabelStratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    scorer = make_scorer(f1_score, average='macro', zero_division=0)
 
     def objective(trial):
         params = {
@@ -73,8 +75,7 @@ with mlflow.start_run(run_name="RF_Optuna_DefaultThreshold"):
         }
         
         model = MultiOutputClassifier(RandomForestClassifier(**params))
-        # n_jobs=1 di cross_validate untuk mencegah konflik multithreading
-        cv_results = cross_validate(model, X_train, Y_train, cv=mlkf, scoring=scorer, n_jobs=1)
+        cv_results = cross_validate_with_fold_sampling(model, X_cv, Y_cv, mlkf)
         return cv_results['test_score'].mean()
 
     study = optuna.create_study(direction='maximize', study_name="RF_Optuna")
@@ -92,7 +93,7 @@ with mlflow.start_run(run_name="RF_Optuna_DefaultThreshold"):
     # Ekstrak Stabilitas
     print("\n📊 Analisis Stabilitas Model (Evaluasi Ulang Best Params)...")
     best_model_cv = MultiOutputClassifier(RandomForestClassifier(**rf_params))
-    best_cv_results = cross_validate(best_model_cv, X_train, Y_train, cv=mlkf, scoring=scorer, n_jobs=1)
+    best_cv_results = cross_validate_with_fold_sampling(best_model_cv, X_cv, Y_cv, mlkf)
     std_cv_f1 = best_cv_results['test_score'].std()
     print(f"   → Standar Deviasi (Stabilitas): ± {std_cv_f1:.4f}")
 

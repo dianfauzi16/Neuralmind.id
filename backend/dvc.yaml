@@ -6,6 +6,14 @@ stages:
     outs:
       - Data/raw
 
+  exploratory_data_analysis:
+    cmd: python src/02_exploratory_data_analysis.py
+    deps:
+      - Data/raw/Dataset.csv
+      - src/02_exploratory_data_analysis.py
+    outs:
+      - outputs/eda_figures
+
   preprocessing:
     cmd: python src/03_data_preprocessing.py
     deps:
@@ -28,22 +36,25 @@ stages:
     deps:
       - Data/split/train_data.csv
       - src/05_multilabel_imbalance_handling.py
+      - src/fold_sampling.py
     outs:
       - Data/processed/train_smote.csv
 
   hyperparameter_tuning_xgb_br:
     cmd: python src/06_hyperparameter_tuning_xgb_br.py
     deps:
-      - Data/processed/train_smote.csv
+      - Data/split/train_data.csv
       - src/06_hyperparameter_tuning_xgb_br.py
+      - src/fold_sampling.py
     outs:
       - models/best_xgb_params_br.json
 
   hyperparameter_tuning_xgb_cc:
     cmd: python src/06_hyperparameter_tuning_xgb_cc.py
     deps:
-      - Data/processed/train_smote.csv
+      - Data/split/train_data.csv
       - src/06_hyperparameter_tuning_xgb_cc.py
+      - src/fold_sampling.py
     outs:
       - models/best_xgb_params_cc.json
 
@@ -51,13 +62,15 @@ stages:
     cmd: python src/07a_baseline_randomforest_br.py
     deps:
       - Data/processed/train_smote.csv
+      - Data/split/train_data.csv
       - Data/split/test_data.csv
       - src/07a_baseline_randomforest_br.py
+      - src/fold_sampling.py
 
   baseline_svm:
     cmd: python src/07b_baseline_svm_br.py
     deps:
-      - Data/processed/train_smote.csv
+      - Data/split/train_data.csv
       - Data/split/test_data.csv
       - src/07b_baseline_svm_br.py
 
@@ -76,6 +89,7 @@ stages:
       - Data/split/test_data.csv
       - models/best_xgb_params_cc.json
       - src/08_xgboost_classifierchain.py
+      - src/chain_probabilities.py
 
   shap_explainability:
     cmd: python src/09_shap_explainability.py
