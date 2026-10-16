@@ -77,7 +77,7 @@ with mlflow.start_run(run_name="Standard_80_20_Single_Split"):
     **Struktur Data Hasil Pembagian:**
     
     1. **Data Training (80%):** **{len(X_train):,}** baris 
-       - Akan di-SMOTE secara penuh pada tahap selanjutnya untuk melatih model (Tuning & Final).
+       - Untuk tuning model pohon, oversampling hanya dilakukan pada bagian pelatihan setiap fold. Untuk pelatihan akhir model pohon, oversampling dilakukan pada seluruh data latih. SVM menggunakan data latih asli dan pembobotan kelas.
        - Disimpan sebagai: `train_data.csv`
        
     2. **Data Testing (20%):** **{len(X_test):,}** baris 
@@ -85,6 +85,6 @@ with mlflow.start_run(run_name="Standard_80_20_Single_Split"):
        - Tetap dalam kondisi *imbalanced* (asli) dan digunakan murni untuk evaluasi akhir model.
        - Disimpan sebagai: `test_data.csv`
     
-    ✅ *Semua data tersimpan di folder `Data/split/`. Siap dilanjutkan ke Fase 2 (MLSMOTE).*
+    ✅ *Semua data tersimpan di folder `Data/split/`. Siap dilanjutkan ke oversampling berbasis prinsip SMOTE pada kelompok (0,0,0).*
     """
     print(summary)

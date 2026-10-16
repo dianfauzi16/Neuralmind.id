@@ -69,3 +69,15 @@ with mlflow.start_run(run_name="Initial_Data_Profiling"):
     print(df_raw.head())
 
 print(f"\n✅ Tracking selesai.")
+
+# Analisis deskriptif negara responden, sesuai sel tambahan notebook.
+df_raw = pd.read_csv(root_path / "Data/raw/Dataset.csv")
+print(df_raw['country'].value_counts(normalize=True).head(20) * 100)
+
+# Cek apakah ada responden Indonesia
+indonesia = df_raw[df_raw['country'] == 'ID']  # atau 'Indonesia'
+print(f"\nJumlah responden Indonesia: {len(indonesia)}")
+print(f"Persentase: {len(indonesia)/len(df_raw)*100:.2f}%")
+
+# Distribusi per region
+# Kelompokkan berdasarkan benua/region

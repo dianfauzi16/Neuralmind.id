@@ -7,8 +7,7 @@ import time
 import json
 from pathlib import Path
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
-from sklearn.model_selection import cross_validate
-from sklearn.metrics import make_scorer, f1_score
+from fold_sampling import cross_validate_with_fold_sampling
 from xgboost import XGBClassifier
 from sklearn.multioutput import ClassifierChain  # ClassifierChain untuk menangkap dependensi antar-label
 import mlflow
@@ -37,13 +36,13 @@ with mlflow.start_run(run_name="XGBoost_CC_Optuna_StratifiedCV"):
     print("⏳ 1. Memuat Data untuk Tuning (Classifier Chains)...")
     target_cols = ['risk_depression', 'risk_anxiety', 'risk_stress']
     
-    train_tune_smote = pd.read_csv(root_path / "Data/processed/train_smote.csv")
-    selected_features = [col for col in train_tune_smote.columns if col not in target_cols]
+    train_tune = pd.read_csv(root_path / "Data/split/train_data.csv")
+    selected_features = [col for col in train_tune.columns if col not in target_cols]
     
-    X_train_tune_smote = train_tune_smote[selected_features]
-    Y_train_tune_smote = train_tune_smote[target_cols].astype(int)
+    X_train_tune = train_tune[selected_features]
+    Y_train_tune = train_tune[target_cols].astype(int)
     
-    print(f"✓ Fitur: {len(selected_features)} | Data Tune SMOTE: {X_train_tune_smote.shape}")
+    print(f"✓ Fitur: {len(selected_features)} | Data Train Asli: {X_train_tune.shape}")
     print("⚠️  Arsitektur: Classifier Chains (Label Dependence Assumption)")
     print("⚠️  PERINGATAN: Tuning CC bersifat sekuensial, waktu komputasi lebih lama dari BR")
 
@@ -56,7 +55,6 @@ with mlflow.start_run(run_name="XGBoost_CC_Optuna_StratifiedCV"):
     
     # Definisi Cross-Validation & Scorer
     mlkf = MultilabelStratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    scorer = make_scorer(f1_score, average='macro', zero_division=0)
 
     def objective(trial):
         params = {
@@ -82,10 +80,7 @@ with mlflow.start_run(run_name="XGBoost_CC_Optuna_StratifiedCV"):
             random_state=42
         )
         
-        # cross_validate dengan n_jobs=1 untuk menghindari konflik multithreading
-        # (CC bersifat sekuensial di dalam, jadi parallel hanya di level fold)
-        cv_results = cross_validate(model, X_train_tune_smote, Y_train_tune_smote,
-                                    cv=mlkf, scoring=scorer, n_jobs=1)
+        cv_results = cross_validate_with_fold_sampling(model, X_train_tune, Y_train_tune, mlkf)
         
         return cv_results['test_score'].mean()
 
@@ -122,8 +117,7 @@ with mlflow.start_run(run_name="XGBoost_CC_Optuna_StratifiedCV"):
         order='random', 
         random_state=42
     )
-    best_cv_results = cross_validate(best_model, X_train_tune_smote, Y_train_tune_smote,
-                                     cv=mlkf, scoring=scorer, n_jobs=1)
+    best_cv_results = cross_validate_with_fold_sampling(best_model, X_train_tune, Y_train_tune, mlkf)
     
     mean_cv_f1 = best_cv_results['test_score'].mean()
     std_cv_f1 = best_cv_results['test_score'].std()

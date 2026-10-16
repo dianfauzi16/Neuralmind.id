@@ -8,3 +8,9 @@ scikit-learn==1.7.2
 iterative-stratification==0.1.9
 PyYAML
 shap
+matplotlib
+seaborn
+missingno
+mlflow
+python-dotenv
+optuna==4.8.0

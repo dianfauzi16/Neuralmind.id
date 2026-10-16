@@ -1,277 +1,250 @@
-# ============================================
-# Mental Health Risk Assessment System
-# Configuration File
-# ============================================
+# Reference configuration synchronized with saved experiment artifacts.
+# Editing this file does not retrain models or modify the active pipeline.
 
-# ============================================
-# MODEL CONFIGURATION
-# ============================================
 model:
-  name: "XGBoost ClassifierChain"
-  version: "1.0"
-  model_path: "./models/multilabel_xgboost_classifier_chain.pkl"
-
-  # Hyperparameters
+  name: XGBoost Classifier Chains
+  version: '1.0'
+  model_path: ./models/multilabel_xgboost_classifier_chain.pkl
   hyperparameters:
-    n_estimators: 300
-    max_depth: 3
-    learning_rate: 0.05
-    subsample: 0.8
-    colsample_bytree: 0.7
-    gamma: 0.2
-    min_child_weight: 1
-    objective: "binary:logistic"
-    eval_metric: "logloss"
+    n_estimators: 200
+    max_depth: 7
+    learning_rate: 0.03821339570384183
+    subsample: 0.8987850529775362
+    colsample_bytree: 0.4061611631747253
+    min_child_weight: 4
+    reg_lambda: 0.20624142737286846
+    gamma: 0.7594604499400279
+    reg_alpha: 0.5669413687279159
     random_state: 42
-
-# ============================================
-# FEATURE CONFIGURATION
-# ============================================
-features:
-  # Total selected features: 35
-  selected_features:
-    - TIPI1
-    - TIPI2
-    - TIPI3
-    - TIPI4
-    - TIPI5
-    - TIPI6
-    - TIPI7
-    - TIPI8
-    - TIPI9
-    - TIPI10
-    - VCL1
-    - VCL4
-    - VCL5
-    - VCL6
-    - VCL7
-    - VCL8
-    - VCL9
-    - VCL10
-    - VCL12
-    - VCL13
-    - VCL14
-    - VCL15
-    - gender
-    - engnat
-    - age
-    - religion
-    - orientation
-    - race
-    - voted
-    - married
-    - familysize
-
-  # Feature categories
-  personality_traits:
-    - TIPI1
-    - TIPI2
-    - TIPI3
-    - TIPI4
-    - TIPI5
-    - TIPI6
-    - TIPI7
-    - TIPI8
-    - TIPI9
-    - TIPI10
-
-  substance_use:
-    - VCL1
-    - VCL4
-    - VCL5
-    - VCL6
-    - VCL7
-    - VCL8
-    - VCL9
-    - VCL10
-    - VCL12
-    - VCL13
-    - VCL14
-    - VCL15
-
-  demographics:
-    - gender
-    - engnat
-    - age
-    - religion
-    - orientation
-    - race
-    - voted
-    - married
-    - familysize
-
-# ============================================
-# TARGET CONFIGURATION
-# ============================================
-targets:
-  target_columns:
+    eval_metric: logloss
+    n_jobs: -1
+    objective: binary:logistic
+  hyperparameters_source: ./models/best_xgb_params_cc.json
+  classifier_chain:
+    order: random
+    random_state: 42
+    chain_method: predict
+    cv: null
+    resolved_target_order:
     - risk_depression
     - risk_anxiety
     - risk_stress
-
+features:
+  selected_features:
+  - TIPI1
+  - TIPI2
+  - TIPI3
+  - TIPI4
+  - TIPI5
+  - TIPI6
+  - TIPI7
+  - TIPI8
+  - TIPI9
+  - TIPI10
+  - education
+  - urban
+  - gender
+  - age
+  - familysize
+  personality_traits:
+  - TIPI1
+  - TIPI2
+  - TIPI3
+  - TIPI4
+  - TIPI5
+  - TIPI6
+  - TIPI7
+  - TIPI8
+  - TIPI9
+  - TIPI10
+  demographics:
+  - education
+  - urban
+  - gender
+  - age
+  - familysize
+targets:
+  target_columns:
+  - risk_depression
+  - risk_anxiety
+  - risk_stress
   target_labels:
-    risk_depression: "Depression Risk"
-    risk_anxiety: "Anxiety Risk"
-    risk_stress: "Stress Risk"
-
+    risk_depression: Depression Risk
+    risk_anxiety: Anxiety Risk
+    risk_stress: Stress Risk
   target_emojis:
-    risk_depression: "😔"
-    risk_anxiety: "😰"
-    risk_stress: "😣"
-
-# ============================================
-# THRESHOLD CONFIGURATION
-# ============================================
+    risk_depression: 😔
+    risk_anxiety: 😰
+    risk_stress: 😣
+  positive_score_cutoffs_inclusive:
+    risk_depression: 14
+    risk_anxiety: 10
+    risk_stress: 19
 thresholds:
-  # Optimal thresholds optimized for F1-Score
-  optimal_thresholds:
-    risk_depression: 0.41
-    risk_anxiety: 0.37
-    risk_stress: 0.38
-
-  # Default threshold (used if optimal not specified)
+  strategy: Fixed default probability threshold; no threshold optimization
   default_threshold: 0.5
-
-  # Risk level thresholds
-  risk_levels:
-    low: 0.40
-    medium: 0.70
-
-# ============================================
-# DATA CONFIGURATION
-# ============================================
+  per_label_thresholds:
+    risk_depression: 0.5
+    risk_anxiety: 0.5
+    risk_stress: 0.5
 data:
-  # Input range constraints
   age_range:
-    min: 15
-    max: 24
-
+    min: 10
+    max: 18
+    description: Inclusive preprocessing filter
   tipi_range:
     min: 1
     max: 7
-    description: "Personality trait rating"
-
-  vcl_range:
-    min: 0
-    max: 6
-    description: "Substance use frequency"
-
-  # Data paths
+    description: Instrument response scale; current saved data also retain zero values
   data_paths:
-    raw: "./Data/raw/"
-    processed: "./Data/processed/"
-    split: "./Data/split/"
-    models: "./models/"
-    outputs: "./outputs/"
-
-# ============================================
-# FEATURE SCALING (if needed)
-# ============================================
+    raw: ./Data/raw/
+    processed: ./Data/processed/
+    split: ./Data/split/
+    models: ./models/
+    outputs: ./outputs/
+  observed_age_range:
+    min: 13
+    max: 18
+  tipi_zero_handling: Zero values remain unchanged in the current experiment; future revision only
 preprocessing:
-  # Standardization parameters (from training data)
-  standardize: false # Not applied in current implementation
-
-  # Categorical encoding
+  standardize: false
+  standardization_scope: No scaling for tree models or synthetic interpolation; SVM uses StandardScaler
+    within its pipeline
   categorical_features:
-    gender: [1, 2]
-    engnat: [0, 1]
-    religion: [0, 1, 2, 3, 4, 5, 6]
-    orientation: [0, 1, 2]
-    race: [0, 1, 2, 3, 4, 5]
-    voted: [0, 1, 2, 3]
-    married: [0, 1, 2, 3, 4]
-
-# ============================================
-# TRAINING CONFIGURATION (for reference)
-# ============================================
+    education:
+    - 1
+    - 2
+    - 3
+    - 4
+    urban:
+    - 1
+    - 2
+    - 3
+    gender:
+    - 1
+    - 2
+    - 3
+  categorical_codes_scope: Documented questionnaire categories, not an additional cleaning rule
+  categorical_values_observed:
+    education:
+    - 0.0
+    - 1.0
+    - 2.0
+    - 3.0
+    - 4.0
+    urban:
+    - 0.0
+    - 1.0
+    - 2.0
+    - 3.0
+    gender:
+    - 0.0
+    - 1.0
+    - 2.0
+    - 3.0
+  dass_response_offset: -1
+  dass_items_and_scores_excluded_from_predictors: true
 training:
-  validation_strategy: "5-Fold Cross-Validation"
+  validation_strategy: MultilabelStratifiedKFold
+  cv_folds: 5
+  cv_shuffle: true
+  cv_random_state: 42
   train_test_split: 0.8
-  imbalance_handling: "MLSMOTE"
+  split_random_state: 42
+  split_stratification: Combination of all three target labels
   total_features_used: 15
-
-  metrics:
-    f1_score: 0.87
-    hamming_loss: 0.15
-    exact_match_ratio: 0.45
-
-# ============================================
-# STREAMLIT CONFIGURATION
-# ============================================
+  imbalance_handling: SMOTE-principle interpolation within the (0,0,0) group
+  oversampling:
+    implementation: ./src/fold_sampling.py
+    models:
+    - XGBoost Classifier Chains
+    - XGBoost Binary Relevance
+    - Random Forest Binary Relevance
+    target_labelset:
+    - 0
+    - 0
+    - 0
+    balance_against: All rows with at least one positive target, pooled as one group
+    neighbor_query_size_including_source: 5
+    exclude_source_from_neighbor_candidates: true
+    random_state: 42
+    cv_seed_rule: 42 + zero-based fold index
+    during_cv: Training partition of each fold only
+    during_final_fit: Full training split only
+    resample_validation_or_test: false
+    categorical_interpolation: Numeric interpolation without rounding; fractional category values remain
+  svm:
+    oversampling: false
+    class_weight_search:
+    - null
+    - balanced
+    selected_class_weight: balanced
+    standardize: true
+    calibration_method: sigmoid
+    calibration_cv: 3
+  optimization:
+    library: Optuna
+    direction: maximize
+    scoring: Macro F1
+    trials:
+      xgboost_cc: 30
+      xgboost_br: 30
+      random_forest_br: 30
+      svm_br: 50
+    sampler_seed: null
 streamlit:
-  app_name: "Mental Health Risk Assessment System"
-  app_icon: "🧠"
-  page_layout: "wide"
-
-  # Color scheme
+  app_name: Mental Health Risk Assessment System
+  app_icon: 🧠
+  page_layout: wide
   theme:
-    primary_color: "#1f77b4"
-    background_color: "#ffffff"
-    secondary_background: "#f0f2f6"
-    text_color: "#262730"
-
-  # UI settings
+    primary_color: '#1f77b4'
+    background_color: '#ffffff'
+    secondary_background: '#f0f2f6'
+    text_color: '#262730'
   show_sidebar: true
-  sidebar_state: "expanded"
-  upload_max_size: 200 # MB
-
-# ============================================
-# LOGGING CONFIGURATION
-# ============================================
+  sidebar_state: expanded
+  upload_max_size: 200
 logging:
-  level: "INFO"
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  file: "./logs/app.log"
-  max_bytes: 10485760 # 10MB
+  level: INFO
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  file: ./logs/app.log
+  max_bytes: 10485760
   backup_count: 5
-
-# ============================================
-# API CONFIGURATION (for future deployment)
-# ============================================
 api:
-  host: "0.0.0.0"
+  host: 0.0.0.0
   port: 8000
   debug: false
   workers: 4
   timeout: 30
-
-# ============================================
-# FEATURE DESCRIPTIONS
-# ============================================
 feature_descriptions:
-  # TIPI Personality Traits
-  TIPI1: "I see myself as extraverted, enthusiastic"
-  TIPI2: "I see myself as critical, quarrelsome"
-  TIPI3: "I see myself as dependable, self-disciplined"
-  TIPI4: "I see myself as anxious, easily upset"
-  TIPI5: "I see myself as open to new experiences, complex"
-  TIPI6: "I see myself as reserved, quiet"
-  TIPI7: "I see myself as sympathetic, warm"
-  TIPI8: "I see myself as disorganized, careless"
-  TIPI9: "I see myself as calm, emotionally stable"
-  TIPI10: "I see myself as conventional, uncreative"
-
-  # VCL Substance Use
-  VCL1: "Alcohol consumption"
-  VCL4: "Cannabis use"
-  VCL5: "Cocaine use"
-  VCL6: "Heroin use"
-  VCL7: "Amphetamine use"
-  VCL8: "Ecstasy use"
-  VCL9: "LSD use"
-  VCL10: "Mushrooms (psilocybin) use"
-  VCL12: "Nicotine use"
-  VCL13: "Methadone use"
-  VCL14: "VSA (volatile substance abuse)"
-  VCL15: "PCP use"
-
-  # Demographics
-  age: "Age in years"
-  gender: "Gender (1=Male, 2=Female)"
-  engnat: "English is native language (0=No, 1=Yes)"
-  religion: "Religious belief"
-  orientation: "Sexual orientation"
-  race: "Race/Ethnicity"
-  voted: "Political voting behavior"
-  married: "Marital status"
-  familysize: "Family size"
+  TIPI1: I see myself as extraverted, enthusiastic
+  TIPI2: I see myself as critical, quarrelsome
+  TIPI3: I see myself as dependable, self-disciplined
+  TIPI4: I see myself as anxious, easily upset
+  TIPI5: I see myself as open to new experiences, complex
+  TIPI6: I see myself as reserved, quiet
+  TIPI7: I see myself as sympathetic, warm
+  TIPI8: I see myself as disorganized, careless
+  TIPI9: I see myself as calm, emotionally stable
+  TIPI10: I see myself as conventional, uncreative
+  gender: Gender (1=Male, 2=Female, 3=Other)
+  age: Age in years
+  familysize: Number of children the respondent mother had, including the respondent
+  education: Completed education (1=Less than high school, 2=High school, 3=University degree, 4=Graduate
+    degree)
+  urban: Area lived in during childhood (1=Rural, 2=Suburban, 3=Urban)
+configuration_scope:
+  purpose: Reference snapshot of the current experiment; not a runtime control file.
+  consumed_by_active_pipeline: false
+  note: Notebooks/scripts and app/main.py currently define their settings independently.
+evaluation:
+  source: ./notebooks/08_xgboost_classifierchain.ipynb
+  model: XGBoost Classifier Chains
+  split: Original test split
+  precision: Four decimals as printed in the saved notebook output
+  metrics:
+    macro_f1: 0.8803
+    micro_f1: 0.881
+    hamming_loss: 0.1892
+    exact_match_ratio: 0.6471
+    macro_roc_auc: 0.838

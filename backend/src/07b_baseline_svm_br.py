@@ -7,7 +7,8 @@ import time
 from pathlib import Path
 from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 from sklearn.model_selection import cross_validate
-from sklearn.metrics import make_scorer, f1_score, classification_report, hamming_loss, accuracy_score, roc_auc_score
+from sklearn.metrics import make_scorer
+from sklearn.metrics import f1_score, classification_report, hamming_loss, accuracy_score, roc_auc_score
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.multioutput import MultiOutputClassifier
@@ -39,20 +40,20 @@ with mlflow.start_run(run_name="SVM_BR_Optuna_DefaultThreshold"):
     print("⏳ 1. Memuat Data...")
     target_cols = ['risk_depression', 'risk_anxiety', 'risk_stress']
     
-    # Memuat data train yang sudah di-SMOTE dan data test asli
-    train_smote = pd.read_csv(root_path / "Data/processed/train_smote.csv")
-    feature_names = [col for col in train_smote.columns if col not in target_cols]
+    # Kalibrasi memiliki CV internal, sehingga gunakan data asli dengan class_weight.
+    train_original = pd.read_csv(root_path / "Data/split/train_data.csv")
+    feature_names = [col for col in train_original.columns if col not in target_cols]
     num_features = len(feature_names)
     
-    X_train = train_smote[feature_names].values
-    Y_train = train_smote[target_cols].astype(int).values
+    X_train = train_original[feature_names].values
+    Y_train = train_original[target_cols].astype(int).values
     
     test_df = pd.read_csv(root_path / "Data/split/test_data.csv")
     X_test = test_df[feature_names].values
     Y_test = test_df[target_cols].astype(int).values
 
     print(f"   ✓ Fitur: {num_features}")
-    print(f"   ✓ Train (SMOTE) : {X_train.shape}")
+    print(f"   ✓ Train (Asli)  : {X_train.shape}")
     print(f"   ✓ Test (Asli)   : {X_test.shape}")
 
     # ==========================================
@@ -69,16 +70,16 @@ with mlflow.start_run(run_name="SVM_BR_Optuna_DefaultThreshold"):
         class_weight = trial.suggest_categorical('class_weight', [None, 'balanced'])
         max_iter = trial.suggest_int('max_iter', 2000, 5000, step=1000)
         
-        pipeline = Pipeline([
-            ('scaler', StandardScaler()),
-            ('svm', CalibratedClassifierCV(
-                LinearSVC(
+        pipeline = CalibratedClassifierCV(
+            Pipeline([
+                ('scaler', StandardScaler()),
+                ('svm', LinearSVC(
                     C=C, class_weight=class_weight, loss='squared_hinge', 
                     penalty='l2', max_iter=max_iter, random_state=42, dual=False
-                ),
-                cv=3, method='sigmoid'
-            ))
-        ])
+                )),
+            ]),
+            cv=3, method='sigmoid'
+        )
         
         model = MultiOutputClassifier(pipeline, n_jobs=-1)
         cv_results = cross_validate(model, X_train, Y_train, cv=mlkf, scoring=scorer, n_jobs=1)
@@ -99,14 +100,15 @@ with mlflow.start_run(run_name="SVM_BR_Optuna_DefaultThreshold"):
     # Ekstrak Stabilitas
     print("\n📊 Analisis Stabilitas Model (Evaluasi Ulang Best Params)...")
     def build_pipeline(params):
-        return Pipeline([
-            ('scaler', StandardScaler()),
-            ('svm', CalibratedClassifierCV(
-                LinearSVC(C=params['C'], class_weight=params['class_weight'], loss='squared_hinge',
-                          penalty='l2', max_iter=params['max_iter'], random_state=42, dual=False),
-                cv=3, method='sigmoid'
-            ))
-        ])
+        return CalibratedClassifierCV(
+            Pipeline([
+                ('scaler', StandardScaler()),
+                ('svm', LinearSVC(C=params['C'], class_weight=params['class_weight'],
+                                  loss='squared_hinge', penalty='l2',
+                                  max_iter=params['max_iter'], random_state=42, dual=False)),
+            ]),
+            cv=3, method='sigmoid'
+        )
         
     best_model_cv = MultiOutputClassifier(build_pipeline(svm_params), n_jobs=-1)
     best_cv_results = cross_validate(best_model_cv, X_train, Y_train, cv=mlkf, scoring=scorer, n_jobs=1)

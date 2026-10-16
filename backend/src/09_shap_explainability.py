@@ -56,27 +56,29 @@ with mlflow.start_run(run_name="SHAP_Analysis_ClassifierChain"):
     print("\n🧠 2. Memulai Ekstraksi SHAP Values...")
     all_shap_importance = {}
     
-    for i, (target, label) in enumerate(zip(target_cols, target_labels)):
+    for i, original_label_index in enumerate(model.order_):
+        target = target_cols[original_label_index]
+        label = target_labels[original_label_index]
         print(f"\n   → Menganalisis alasan AI untuk kondisi: {label}...")
         estimator = model.estimators_[i]
         
         # Tentukan nama fitur untuk tahapan ini
-        current_feature_names = selected_features.copy()
-        if i == 1:
-            current_feature_names += ['pred_depression']
-        elif i == 2:
-            current_feature_names += ['pred_depression', 'pred_anxiety']
+        previous_targets = [target_cols[index] for index in model.order_[:i]]
+        current_feature_names = selected_features + [
+            'pred_' + previous.replace('risk_', '') for previous in previous_targets
+        ]
             
         # Konversi X_sample_aug ke DataFrame sementara untuk SHAP dengan nama fitur yang benar
         X_shap_df = pd.DataFrame(X_sample_aug, columns=current_feature_names)
         
+        # SHAP menjelaskan keluaran mentah model pohon (log-odds), bukan perubahan probabilitas.
         explainer = shap.TreeExplainer(estimator)
         shap_values = explainer.shap_values(X_shap_df)
         
         # Generate summary plot
         plt.figure(figsize=(10, 8))
         shap.summary_plot(shap_values, X_shap_df, show=False, max_display=15)
-        plt.title(f'SHAP Feature Importance: Faktor Pemicu {label}', fontsize=16, fontweight='bold', pad=20)
+        plt.title(f'SHAP Feature Contributions: {label}', fontsize=16, fontweight='bold', pad=20)
         plt.tight_layout()
         fig_path = output_dir / f"shap_summary_{label.lower()}.png"
         plt.savefig(fig_path, dpi=300, bbox_inches='tight')
@@ -89,7 +91,7 @@ with mlflow.start_run(run_name="SHAP_Analysis_ClassifierChain"):
         explanation = explainer(X_shap_df.iloc[[sample_idx]])
         plt.figure(figsize=(10, 6))
         shap.waterfall_plot(explanation[0], show=False)
-        plt.title(f'SHAP Local Explanation: {label} (Responden #{sample_idx})', fontsize=14, fontweight='bold', pad=15)
+        plt.title(f'SHAP Local Explanation: {label} (Indeks data uji: {X_sample.index[sample_idx]})', fontsize=14, fontweight='bold', pad=15)
         plt.tight_layout()
         waterfall_path = output_dir / f"shap_waterfall_{label.lower()}.png"
         plt.savefig(waterfall_path, dpi=300, bbox_inches='tight')
@@ -104,9 +106,7 @@ with mlflow.start_run(run_name="SHAP_Analysis_ClassifierChain"):
         all_shap_importance[label] = top_features
         
         # Update X_sample_aug untuk estimator berikutnya pada ClassifierChain
-        # Prediksi threshold 0.5 lalu append ke X_sample_aug
-        pred_proba = estimator.predict_proba(X_sample_aug)[:, 1]
-        pred_label = (pred_proba >= 0.5).astype(int).reshape(-1, 1)
+        pred_label = np.asarray(estimator.predict(X_sample_aug)).reshape(-1, 1)
         X_sample_aug = np.hstack([X_sample_aug, pred_label])
         
     mlflow.log_dict(all_shap_importance, "shap_top_features_cc.json")
@@ -115,6 +115,6 @@ with mlflow.start_run(run_name="SHAP_Analysis_ClassifierChain"):
     print("🎉 SHAP ANALYSIS CLASSIFIER CHAIN SELESAI!")
     print("="*60)
     for label, features in all_shap_importance.items():
-        print(f"\n📊 Top 5 Faktor Pemicu {label}:")
+        print(f"\n📊 Top 5 Kontribusi Fitur terhadap Prediksi {label}:")
         for rank, (feat, importance) in enumerate(list(features.items())[:5], 1):
             print(f"   {rank}. {feat}: {importance:.4f}")

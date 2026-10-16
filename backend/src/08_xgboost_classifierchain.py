@@ -10,6 +10,7 @@ from pathlib import Path
 from sklearn.metrics import f1_score, classification_report, hamming_loss, accuracy_score, roc_auc_score
 from xgboost import XGBClassifier
 from sklearn.multioutput import ClassifierChain
+from chain_probabilities import predict_chain_probabilities
 import mlflow
 import os
 from dotenv import load_dotenv
@@ -76,9 +77,6 @@ with mlflow.start_run(run_name="XGBoost_ClassifierChain_Final_DefaultThreshold")
         **clean_params
     )
     
-    # FIX 2: Paksa Scikit-Learn mengenali ini sebagai Classifier (Mencegah error predict_proba)
-    base_xgb._estimator_type = "classifier"
-    
     final_model = ClassifierChain(base_xgb, order='random', random_state=42)
     final_model.fit(X_train_full_smote, Y_train_full_smote)
     
@@ -99,10 +97,7 @@ with mlflow.start_run(run_name="XGBoost_ClassifierChain_Final_DefaultThreshold")
     exact_match = accuracy_score(Y_test, y_pred)
     
     # Prediksi probabilitas (untuk ROC-AUC)
-    y_test_probas = final_model.predict_proba(X_test)
-    
-    # FIX KRUSIAL: Deteksi format output ClassifierChain vs MultiOutputClassifier
-    is_list_format = isinstance(y_test_probas, list)
+    y_test_probas = predict_chain_probabilities(final_model, X_test)
     
     per_label_f1_scores = {}
     roc_auc_scores = []
@@ -111,13 +106,8 @@ with mlflow.start_run(run_name="XGBoost_ClassifierChain_Final_DefaultThreshold")
         # Hitung F1 per label (Y_test dan y_pred adalah 2D array)
         per_label_f1_scores[target_name] = f1_score(Y_test[:, i], y_pred[:, i], zero_division=0)
         
-        # Ambil probabilitas kelas 1 untuk label ke-i
-        if is_list_format:
-            # Format List (seperti MultiOutputClassifier): list[array(n_samples, 2)]
-            y_prob = y_test_probas[i][:, 1]
-        else:
-            # Format Single 2D Array (ClassifierChain Biner): array(n_samples, n_labels)
-            y_prob = y_test_probas[:, i]
+        # Kolom probabilitas sudah dikembalikan ke urutan target asli.
+        y_prob = y_test_probas[:, i]
             
         roc_auc_scores.append(roc_auc_score(Y_test[:, i], y_prob))
         
