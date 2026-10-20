@@ -13,7 +13,7 @@ import shap
 from src.chain_probabilities import predict_chain_probabilities
 warnings.filterwarnings('ignore')
 
-app = FastAPI(title="Sistem Penilaian Risiko Kesehatan Mental API")
+app = FastAPI(title="API Demonstrasi Model Penelitian Multi-label")
 
 # Add CORS middleware to allow Next.js frontend to communicate
 app.add_middleware(
@@ -45,7 +45,6 @@ selected_features = [
 config = {
     "selected_features": selected_features,
     "target_cols": ['risk_depression', 'risk_anxiety', 'risk_stress'],
-    "optimal_thresholds": {'risk_depression': 0.5, 'risk_anxiety': 0.5, 'risk_stress': 0.5},
 }
 
 # 3. Helper functions for Prediction
@@ -61,16 +60,16 @@ def get_shap_explanations(model, input_df, target_cols):
     base_features = list(input_df.columns)
     
     feature_translations = {
-    "TIPI1": "Ekstrovert / Antusias",
-    "TIPI2": "Kritis / Suka Berdebat",
-    "TIPI3": "Dapat Diandalkan / Disiplin",
-    "TIPI4": "Mudah Cemas / Mudah Terganggu",
-    "TIPI5": "Terbuka pada Pengalaman Baru",
-    "TIPI6": "Pendiam / Tertutup",
-    "TIPI7": "Simpatik / Hangat",
-    "TIPI8": "Ceroboh / Tidak Terorganisir",
-    "TIPI9": "Tenang / Stabil Emosional",
-    "TIPI10": "Konvensional / Kurang Kreatif",
+    "TIPI1": "Ekstrovert / Antusias (TIPI1)",
+    "TIPI2": "Kritis / Suka Berdebat (TIPI2)",
+    "TIPI3": "Dapat Diandalkan / Disiplin (TIPI3)",
+    "TIPI4": "Mudah Cemas / Mudah Terganggu (TIPI4)",
+    "TIPI5": "Terbuka pada Pengalaman Baru (TIPI5)",
+    "TIPI6": "Pendiam / Tertutup (TIPI6)",
+    "TIPI7": "Simpatik / Hangat (TIPI7)",
+    "TIPI8": "Ceroboh / Tidak Terorganisir (TIPI8)",
+    "TIPI9": "Tenang / Stabil Emosional (TIPI9)",
+    "TIPI10": "Konvensional / Kurang Kreatif (TIPI10)",
 
     "education": "Tingkat Pendidikan",
     "urban": "Tingkat Urbanisasi",
@@ -78,9 +77,9 @@ def get_shap_explanations(model, input_df, target_cols):
     "age": "Usia",
     "familysize": "Jumlah Anggota Keluarga",
 
-    "pred_depression": "Risiko Depresi",
-    "pred_anxiety": "Risiko Kecemasan",
-    "pred_stress": "Risiko Stres",
+    "pred_depression": "Prediksi sebelumnya: label depresi",
+    "pred_anxiety": "Prediksi sebelumnya: label kecemasan",
+    "pred_stress": "Prediksi sebelumnya: label stres",
 }
     
     for i, original_label_index in enumerate(model.order_):
@@ -109,7 +108,7 @@ def get_shap_explanations(model, input_df, target_cols):
             impact_val = float(sv[idx])
             
             human_readable_name = feature_translations.get(raw_feat_name, raw_feat_name)
-            direction = "meningkatkan_risiko" if impact_val > 0 else "menurunkan_risiko"
+            direction = "menaikkan_skor_model" if impact_val > 0 else "menurunkan_skor_model"
             
             shap_explanation.append({
                 "feature": human_readable_name,
@@ -124,11 +123,6 @@ def get_shap_explanations(model, input_df, target_cols):
         X_sample_aug = np.hstack([X_sample_aug, pred_label])
         
     return explanations
-def get_risk_level(prob):
-    if prob >= 0.7: return "high"
-    elif prob >= 0.4: return "medium"
-    return "low"
-
 @app.get("/api/config")
 def get_config():
     """Return the selected features and configuration for dynamic frontend generation"""
@@ -158,24 +152,21 @@ def predict_mental_health(data: Dict[str, Any]):
         # Calculate SHAP local explanations
         shap_explanations = get_shap_explanations(model, input_df, config['target_cols'])
         
-        dep_prob = float(probabilities[0][0, 1])
-        anx_prob = float(probabilities[1][0, 1])
-        str_prob = float(probabilities[2][0, 1])
+        dep_prediction = int(probabilities[0][0, 1] >= 0.5)
+        anx_prediction = int(probabilities[1][0, 1] >= 0.5)
+        str_prediction = int(probabilities[2][0, 1] >= 0.5)
 
         return {
             "depression": {
-                "prob": dep_prob,
-                "risk": get_risk_level(dep_prob),
+                "prediction": dep_prediction,
                 "shap_explanation": shap_explanations["depression"]
             },
             "anxiety": {
-                "prob": anx_prob,
-                "risk": get_risk_level(anx_prob),
+                "prediction": anx_prediction,
                 "shap_explanation": shap_explanations["anxiety"]
             },
             "stress": {
-                "prob": str_prob,
-                "risk": get_risk_level(str_prob),
+                "prediction": str_prediction,
                 "shap_explanation": shap_explanations["stress"]
             }
         }
@@ -184,4 +175,4 @@ def predict_mental_health(data: Dict[str, Any]):
 
 @app.get("/")
 def read_root():
-    return {"message": "Mental Health Risk Assessment API is running. Send POST request to /api/predict"}
+    return {"message": "Research model demonstration API is running. Send POST request to /api/predict"}
