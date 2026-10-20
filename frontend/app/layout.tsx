@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "NeuralMind.id",
-  description: "Platform AI Mental Health Prediction",
+  description: "Demonstrasi model penelitian klasifikasi multi-label berbasis machine learning.",
 };
 
 export default function RootLayout({

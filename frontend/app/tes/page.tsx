@@ -8,7 +8,7 @@ import { ArrowLeft, BrainCircuit, ChevronRight, ChevronLeft, CheckCircle, AlertT
 // --- Data Pertanyaan Lengkap (Akan di-filter dinamis berdasarkan API) ---
 
 const demografi = [
-  { id: "age", label: "Usia", type: "number", min: 10, max: 18, defaultValue: 10 },
+  { id: "age", label: "Usia", type: "number", min: 13, max: 18, defaultValue: 13 },
   { id: "gender", label: "Jenis Kelamin", type: "select", options: [{val: 1, label: "Laki-laki"}, {val: 2, label: "Perempuan"}] },
   { id: "education", label: "Tingkat Pendidikan", type: "select", options: [{val: 1, label: "Di Bawah SMA"}, {val: 2, label: "SMA/Sederajat"}, {val: 3, label: "Sarjana (S1)"}, {val: 4, label: "Pascasarjana (S2/S3)"}] },
   { id: "urban", label: "Wilayah Tempat Tinggal", type: "select", options: [{val: 1, label: "Pedesaan"}, {val: 2, label: "Pinggiran Kota"}, {val: 3, label: "Perkotaan"}] },
@@ -82,26 +82,10 @@ const tipiOptions = [
   { val: 7, label: "Sangat Setuju" }
 ];
 
-const getExplanation = (condition: 'depression' | 'anxiety' | 'stress', risk: 'high' | 'medium' | 'low') => {
-  const explanations = {
-    depression: {
-      high: { desc: "Skor menunjukkan kemungkinan besar mengalami gejala depresi seperti perasaan sedih berkepanjangan, kehilangan minat, atau gangguan tidur.", rec: "Sangat disarankan untuk segera berkonsultasi dengan profesional kesehatan mental." },
-      medium: { desc: "Ada beberapa indikator yang menunjukkan potensi gejala depresi ringan hingga sedang.", rec: "Pertimbangkan untuk berbicara dengan konselor atau psikolog untuk evaluasi lebih lanjut." },
-      low: { desc: "Skor menunjukkan kemungkinan rendah mengalami gejala depresi saat ini.", rec: "Tetap jaga kesehatan mental dengan pola hidup sehat dan dukungan sosial yang baik." }
-    },
-    anxiety: {
-      high: { desc: "Skor menunjukkan kemungkinan besar mengalami gejala kecemasan berlebihan, seperti rasa khawatir yang tidak terkendali, jantung berdebar, atau kesulitan berkonsentrasi.", rec: "Sangat disarankan untuk segera mencari bantuan profesional." },
-      medium: { desc: "Ada indikasi potensi gangguan kecemasan ringan.", rec: "Teknik relaksasi, mindfulness, dan konsultasi awal dengan profesional dapat membantu." },
-      low: { desc: "Skor menunjukkan tingkat kecemasan yang normal.", rec: "Pertahankan kebiasaan baik seperti olahraga teratur dan istirahat cukup." }
-    },
-    stress: {
-      high: { desc: "Skor menunjukkan kemungkinan besar mengalami tingkat stres yang tinggi yang dapat memengaruhi kesehatan fisik dan mental.", rec: "Sangat disarankan untuk mencari bantuan profesional dan menerapkan strategi manajemen stres." },
-      medium: { desc: "Ada indikasi tingkat stres yang perlu diperhatikan.", rec: "Cobalah teknik manajemen stres seperti olahraga, meditasi, atau berbicara dengan orang terdekat." },
-      low: { desc: "Tingkat stres Anda tampak terkendali.", rec: "Terus jaga keseimbangan antara pekerjaan, istirahat, dan aktivitas sosial." }
-    }
-  };
-  return explanations[condition][risk];
-};
+const getPredictionDescription = (prediction: number) =>
+  prediction === 1
+    ? "Keluaran model untuk label target ini bernilai 1 menurut ambang klasifikasi eksperimen. Ini bukan diagnosis atau penilaian kondisi seseorang."
+    : "Keluaran model untuk label target ini bernilai 0 menurut ambang klasifikasi eksperimen. Ini tidak menyatakan kondisi kesehatan seseorang.";
 
 export default function TesPage() {
   const [currentStep, setCurrentStep] = useState(-1); // -1 = Loading Config
@@ -127,7 +111,6 @@ export default function TesPage() {
         
         // 2. Filter pertanyaan agar hanya menampilkan yang terpilih oleh model
         const filteredDemo = [
-          { id: "userName", label: "Nama Panggilan (Opsional)", type: "text", defaultValue: "" },
           ...demografi.filter(q => selected.includes(q.id))
         ];
         const filteredTipi = tipi.filter(q => selected.includes(q.id));
@@ -153,7 +136,7 @@ export default function TesPage() {
       })
       .catch(err => {
         console.error(err);
-        alert("Gagal memuat konfigurasi tes dari server. Pastikan koneksi internet Anda stabil atau muat ulang halaman.");
+        alert("Gagal memuat konfigurasi demo dari server. Pastikan koneksi internet Anda stabil atau muat ulang halaman.");
       });
   }, []);
 
@@ -225,7 +208,7 @@ export default function TesPage() {
     return (
       <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-4 border-stone-200 border-t-teal-700 rounded-full animate-spin mb-4"></div>
-        <p className="text-stone-500 font-medium animate-pulse">Menghubungkan ke server prediksi...</p>
+        <p className="text-stone-500 font-medium animate-pulse">Menghubungkan ke API demonstrasi model...</p>
       </div>
     );
   }
@@ -265,9 +248,9 @@ export default function TesPage() {
         {stepInfo?.type === 'demografi' && (
           <div className="animate-in fade-in slide-in-from-right-8 duration-500">
             <div className="mb-8">
-              <span className="text-teal-700">Bagian 1: Profil</span>
+              <span className="text-teal-700">Bagian 1: Fitur demografi</span>
               <h1 className="text-3xl font-bold text-stone-900 mb-3">Informasi Demografis</h1>
-              <p className="text-stone-600">Mohon lengkapi data demografis berikut. Data Anda akan diproses secara anonim.</p>
+              <p className="text-stone-600">Isi variabel demografi yang digunakan dalam eksperimen. Jawaban dikirim ke server API untuk menghasilkan keluaran model; jangan masukkan informasi identitas tambahan.</p>
             </div>
 
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
@@ -345,8 +328,8 @@ export default function TesPage() {
         {isResultView && isSubmitting && (
           <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-500">
             <div className="w-16 h-16 border-4 border-stone-200 border-t-teal-700 rounded-full animate-spin mb-6"></div>
-            <h2 className="text-2xl font-bold text-stone-900 mb-2">Menganalisis Jawaban...</h2>
-            <p className="text-stone-500">Menerapkan model Machine Learning pada data Anda.</p>
+            <h2 className="text-2xl font-bold text-stone-900 mb-2">Menjalankan demonstrasi model...</h2>
+            <p className="text-stone-500">Model memproses fitur yang dimasukkan untuk menghasilkan prediksi label.</p>
           </div>
         )}
 
@@ -357,68 +340,41 @@ export default function TesPage() {
               <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10" />
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-stone-900 mb-4">Analisis Selesai</h1>
+                <h1 className="text-3xl md:text-4xl font-bold text-stone-900 mb-4">Demo Model Selesai</h1>
               <p className="text-stone-600 max-w-lg mx-auto">
-                Halo <strong className="text-stone-900">{formData.userName || 'Sobat'}</strong>, berikut adalah hasil prediksi risiko kesehatan mental Anda berdasarkan respons yang diberikan dan algoritma sistem.
+                Berikut keluaran model untuk fitur yang dimasukkan. Label target penelitian dibentuk dari ambang skor DASS-42, sedangkan demo ini menggunakan item TIPI dan variabel demografi.
+              </p>
+              <p className="text-sm text-stone-500 max-w-2xl mx-auto mt-3">
+                Keluaran ini adalah demonstrasi eksperimen, bukan hasil pengukuran DASS-42 terhadap Anda, diagnosis, atau penilaian klinis. Nilai label 1 memakai ambang prediksi model 0,5; label target penelitian berasal dari skor DASS-42 depresi ≥14, kecemasan ≥10, dan stres ≥19.
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-10">
               {/* Depresi */}
-              <div className={`p-6 rounded-3xl border flex flex-col ${result.depression.risk === 'high' ? 'bg-red-50 border-red-200' : result.depression.risk === 'medium' ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'}`}>
-                <h3 className="font-bold text-stone-900 mb-1">Depresi</h3>
+              <div className="p-6 rounded-3xl border border-stone-200 bg-stone-50 flex flex-col">
+                <h3 className="font-bold text-stone-900 mb-1">Label target depresi</h3>
                 <div className="flex items-end gap-2 mb-4">
-                  <span className="text-3xl font-extrabold">{(result.depression.prob * 100).toFixed(0)}%</span>
-                  <span className="text-stone-500 mb-1 text-sm font-medium uppercase tracking-wider">{result.depression.risk}</span>
+                  <span className="text-2xl font-bold text-stone-800">Prediksi label: {result.depression.prediction}</span>
                 </div>
-                <div className="w-full bg-black/5 rounded-full h-2 mb-6">
-                  <div className={`h-2 rounded-full ${result.depression.risk === 'high' ? 'bg-red-500' : result.depression.risk === 'medium' ? 'bg-orange-500' : 'bg-green-500'}`} style={{ width: `${result.depression.prob * 100}%` }}></div>
-                </div>
-                <div className="flex-grow flex flex-col justify-between">
-                  <p className="text-sm text-stone-700 mb-3">{getExplanation('depression', result.depression.risk).desc}</p>
-                  <div className="bg-white/60 p-3 rounded-xl border border-white/40 mt-auto">
-                    <strong className="text-xs uppercase tracking-wider text-stone-500 block mb-1">Rekomendasi</strong>
-                    <p className="text-sm font-medium text-stone-800">{getExplanation('depression', result.depression.risk).rec}</p>
-                  </div>
-                </div>
+                <p className="text-sm text-stone-600">{getPredictionDescription(result.depression.prediction)}</p>
               </div>
 
               {/* Kecemasan */}
-              <div className={`p-6 rounded-3xl border flex flex-col ${result.anxiety.risk === 'high' ? 'bg-red-50 border-red-200' : result.anxiety.risk === 'medium' ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'}`}>
-                <h3 className="font-bold text-stone-900 mb-1">Kecemasan</h3>
+              <div className="p-6 rounded-3xl border border-stone-200 bg-stone-50 flex flex-col">
+                <h3 className="font-bold text-stone-900 mb-1">Label target kecemasan</h3>
                 <div className="flex items-end gap-2 mb-4">
-                  <span className="text-3xl font-extrabold">{(result.anxiety.prob * 100).toFixed(0)}%</span>
-                  <span className="text-stone-500 mb-1 text-sm font-medium uppercase tracking-wider">{result.anxiety.risk}</span>
+                  <span className="text-2xl font-bold text-stone-800">Prediksi label: {result.anxiety.prediction}</span>
                 </div>
-                <div className="w-full bg-black/5 rounded-full h-2 mb-6">
-                  <div className={`h-2 rounded-full ${result.anxiety.risk === 'high' ? 'bg-red-500' : result.anxiety.risk === 'medium' ? 'bg-orange-500' : 'bg-green-500'}`} style={{ width: `${result.anxiety.prob * 100}%` }}></div>
-                </div>
-                <div className="flex-grow flex flex-col justify-between">
-                  <p className="text-sm text-stone-700 mb-3">{getExplanation('anxiety', result.anxiety.risk).desc}</p>
-                  <div className="bg-white/60 p-3 rounded-xl border border-white/40 mt-auto">
-                    <strong className="text-xs uppercase tracking-wider text-stone-500 block mb-1">Rekomendasi</strong>
-                    <p className="text-sm font-medium text-stone-800">{getExplanation('anxiety', result.anxiety.risk).rec}</p>
-                  </div>
-                </div>
+                <p className="text-sm text-stone-600">{getPredictionDescription(result.anxiety.prediction)}</p>
               </div>
 
               {/* Stres */}
-              <div className={`p-6 rounded-3xl border flex flex-col ${result.stress.risk === 'high' ? 'bg-red-50 border-red-200' : result.stress.risk === 'medium' ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'}`}>
-                <h3 className="font-bold text-stone-900 mb-1">Stres</h3>
+              <div className="p-6 rounded-3xl border border-stone-200 bg-stone-50 flex flex-col">
+                <h3 className="font-bold text-stone-900 mb-1">Label target stres</h3>
                 <div className="flex items-end gap-2 mb-4">
-                  <span className="text-3xl font-extrabold">{(result.stress.prob * 100).toFixed(0)}%</span>
-                  <span className="text-stone-500 mb-1 text-sm font-medium uppercase tracking-wider">{result.stress.risk}</span>
+                  <span className="text-2xl font-bold text-stone-800">Prediksi label: {result.stress.prediction}</span>
                 </div>
-                <div className="w-full bg-black/5 rounded-full h-2 mb-6">
-                  <div className={`h-2 rounded-full ${result.stress.risk === 'high' ? 'bg-red-500' : result.stress.risk === 'medium' ? 'bg-orange-500' : 'bg-green-500'}`} style={{ width: `${result.stress.prob * 100}%` }}></div>
-                </div>
-                <div className="flex-grow flex flex-col justify-between">
-                  <p className="text-sm text-stone-700 mb-3">{getExplanation('stress', result.stress.risk).desc}</p>
-                  <div className="bg-white/60 p-3 rounded-xl border border-white/40 mt-auto">
-                    <strong className="text-xs uppercase tracking-wider text-stone-500 block mb-1">Rekomendasi</strong>
-                    <p className="text-sm font-medium text-stone-800">{getExplanation('stress', result.stress.risk).rec}</p>
-                  </div>
-                </div>
+                <p className="text-sm text-stone-600">{getPredictionDescription(result.stress.prediction)}</p>
               </div>
             </div>
 
@@ -426,47 +382,51 @@ export default function TesPage() {
             {!showInsights ? (
               <div className="bg-teal-50 border border-teal-100 p-8 rounded-3xl text-center mb-10 animate-in fade-in duration-700">
                 <BrainCircuit className="w-12 h-12 text-teal-600 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-stone-900 mb-2">Ingin tahu mengapa Anda mendapat hasil ini?</h3>
+                <h3 className="text-xl font-bold text-stone-900 mb-2">Ingin melihat kontribusi fitur pada keluaran model?</h3>
                 <p className="text-stone-600 mb-6 max-w-md mx-auto">
-                  Sistem AI kami dapat menjelaskan secara transparan faktor apa saja dari profil Anda yang paling memengaruhi peningkatan atau penurunan risiko.
+                  SHAP merangkum kontribusi fitur terhadap keluaran model untuk contoh ini. Nilai tersebut tidak menunjukkan penyebab kondisi psikologis.
                 </p>
                 <button
                   onClick={() => setShowInsights(true)}
                   className="bg-white border-2 border-teal-700 text-teal-800 px-6 py-3 rounded-xl font-bold hover:bg-teal-700 hover:text-white transition-all shadow-sm"
                 >
-                  Telusuri Faktor Pemicu (Analisis AI)
+                  Lihat Kontribusi Fitur (SHAP)
                 </button>
               </div>
             ) : (
               <div className="bg-white border border-stone-200 p-6 sm:p-8 rounded-3xl mb-10 shadow-sm animate-in fade-in slide-in-from-bottom-8 duration-500">
                 <div className="text-center mb-8">
-                  <span className="text-teal-700 font-bold uppercase tracking-wider text-sm mb-2 block">Laporan Deep Dive</span>
-                  <h3 className="text-2xl font-bold text-stone-900 mb-2">Faktor Pengaruh (AI Insights)</h3>
-                  <p className="text-stone-500">Berikut adalah 5 faktor utama dari jawaban Anda yang paling berkontribusi terhadap kalkulasi sistem.</p>
+                  <span className="text-teal-700 font-bold uppercase tracking-wider text-sm mb-2 block">Penjelasan Model</span>
+                  <h3 className="text-2xl font-bold text-stone-900 mb-2">Kontribusi Fitur (SHAP)</h3>
+                  <p className="text-stone-500">Nilai SHAP menunjukkan kontribusi fitur pada skor model untuk contoh ini, bukan penyebab atau faktor pemicu. Pada Classifier Chain, prediksi label sebelumnya juga dapat menjadi fitur.</p>
                 </div>
                 
                 <div className="space-y-8">
                   {['depression', 'anxiety', 'stress'].map((condition) => {
                     const labelMap = { depression: 'Depresi', anxiety: 'Kecemasan', stress: 'Stres' };
                     const shaps = result[condition as keyof typeof result].shap_explanation;
+                    const maxAbsShap = Math.max(0, ...(shaps ?? []).map((shap: any) => Math.abs(Number(shap.impact_value) || 0)));
                     return (
                       <div key={condition} className="bg-stone-50 p-6 rounded-2xl border border-stone-100">
                         <h4 className="font-bold text-lg text-stone-800 mb-4 border-b border-stone-200 pb-2">
-                          Analisis Risiko {labelMap[condition as keyof typeof labelMap]}
+                          Prediksi label target: {labelMap[condition as keyof typeof labelMap]}
                         </h4>
                         <div className="space-y-5">
                           {shaps && shaps.map((shap: any, idx: number) => (
                             <div key={idx} className="flex flex-col gap-1.5">
-                              <div className="flex justify-between items-end">
+                              <div className="flex justify-between items-end gap-3">
                                 <span className="font-semibold text-sm text-stone-700">{idx + 1}. {shap.feature}</span>
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${shap.type === 'meningkatkan_risiko' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                                  {shap.type === 'meningkatkan_risiko' ? '📈 Memicu' : '📉 Meredam'}
-                                </span>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-xs tabular-nums text-stone-500">{Number(shap.impact_value).toFixed(3)}</span>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${shap.type === 'menaikkan_skor_model' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'}`}>
+                                    {shap.type === 'menaikkan_skor_model' ? 'Skor model naik' : 'Skor model turun'}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="w-full bg-stone-200 rounded-full h-2.5 flex overflow-hidden shadow-inner">
+                              <div className="w-full bg-stone-200 rounded-full h-2.5 flex overflow-hidden shadow-inner" role="img" aria-label={`Besar relatif nilai SHAP ${shap.feature}: ${Number(shap.impact_value).toFixed(3)}`}>
                                 <div 
-                                  className={`h-full rounded-full transition-all duration-1000 ${shap.type === 'meningkatkan_risiko' ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-green-400 to-green-600'}`} 
-                                  style={{ width: `${Math.min(Math.abs(shap.impact_value) * 30, 100)}%` }}
+                                  className={`h-full rounded-full transition-all duration-1000 ${shap.type === 'menaikkan_skor_model' ? 'bg-amber-500' : 'bg-sky-500'}`} 
+                                  style={{ width: `${maxAbsShap > 0 ? (Math.abs(Number(shap.impact_value) || 0) / maxAbsShap) * 100 : 0}%` }}
                                 ></div>
                               </div>
                             </div>
@@ -485,7 +445,7 @@ export default function TesPage() {
                     }}
                     className="text-stone-500 hover:text-stone-800 font-semibold underline underline-offset-4"
                   >
-                    Tutup Laporan AI
+                    Tutup Penjelasan Model
                   </button>
                 </div>
               </div>
@@ -496,12 +456,12 @@ export default function TesPage() {
                 <AlertTriangle className="w-7 h-7" />
               </div>
               <div>
-                <h4 className="text-lg font-bold mb-2">Peringatan & Disclaimer Medis</h4>
+                <h4 className="text-lg font-bold mb-2">Batas penggunaan</h4>
                 <p className="text-sm text-rose-800/90 leading-relaxed mb-4">
-                  Tes ini dikembangkan sebagai alat bantu informasi (<em>self-awareness</em>) berdasarkan model <em>Machine Learning</em>, dan <strong>bukan merupakan alat diagnosis klinis yang pasti</strong>. Hasil dari prediksi sistem ini <strong>tidak boleh digunakan untuk menggantikan peran psikolog, psikiater, maupun konselor profesional</strong>.
+                  Situs ini merupakan demonstrasi model penelitian, bukan alat diagnosis, skrining klinis, atau penilaian kondisi kesehatan pengunjung. Label target dibentuk dari skor DASS-42 pada dataset; demo ini tidak mengukur skor DASS-42 Anda.
                 </p>
                 <p className="text-sm text-rose-800/90 leading-relaxed font-semibold">
-                  Jika Anda merasakan tekanan emosional yang berat, dorongan untuk menyakiti diri sendiri, atau membutuhkan bantuan mendesak, mohon segera hubungi layanan gawat darurat (119) atau datangi layanan fasilitas kesehatan mental terdekat di kota Anda.
+                  Jika Anda membutuhkan dukungan terkait kesehatan mental, hubungi orang tepercaya atau tenaga profesional di wilayah Anda.
                 </p>
               </div>
             </div>
@@ -521,7 +481,7 @@ export default function TesPage() {
                 }}
                 className="w-full sm:w-auto bg-teal-700 text-white px-8 py-3 rounded-xl font-semibold hover:bg-teal-800 transition-colors shadow-lg shadow-teal-700/20"
               >
-                Ulangi Tes
+                Ulangi Demo
               </button>
             </div>
           </div>
@@ -551,7 +511,7 @@ export default function TesPage() {
                   : 'bg-teal-700 hover:bg-teal-600 shadow-teal-700/30'
               }`}
             >
-              {currentStep === stepsData.length - 1 ? "Kirim Prediksi" : "Selanjutnya"}
+              {currentStep === stepsData.length - 1 ? "Lihat Keluaran Model" : "Selanjutnya"}
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
